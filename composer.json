@@ -1,0 +1,33 @@
+{
+    "name": "richarddobron/google-maps-data-parameter-parser",
+    "description": "PHP parser and builder for the \"data\" parameter (Protocol Buffers) in Google Maps URLs",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "files": [
+            "src/helpers.php"
+        ],
+        "psr-4": {
+            "dobron\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Richard Dobroň"
+        }
+    ],
+    "minimum-stability": "dev",
+    "scripts": {
+        "post-merge": "composer install",
+        "test": "vendor/bin/phpunit --colors=always --testdox"
+    },
+    "scripts-descriptions": {
+        "test": "Run all tests."
+    },
+    "require": {
+        "php": "^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": ">=7.0"
+    }
+}
