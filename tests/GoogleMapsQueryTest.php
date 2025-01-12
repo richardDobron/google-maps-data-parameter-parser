@@ -23,4 +23,12 @@ class GoogleMapsQueryTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($protocolBuffer, GoogleMapsQueryArgs::encode($data));
     }
+
+    public function testInvalidProtocolBuffer()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown param format: 1r6');
+
+        GoogleMapsQueryArgs::decode('!1r6');
+    }
 }

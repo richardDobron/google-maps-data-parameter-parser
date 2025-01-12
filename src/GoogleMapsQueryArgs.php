@@ -4,6 +4,13 @@ namespace dobron;
 
 class GoogleMapsQueryArgs
 {
+    /**
+     * Decodes a protocol buffer string into an array.
+     *
+     * @param string $protocolBuffer The protocol buffer string.
+     * @return array The decoded array.
+     * @throws \InvalidArgumentException If the protocol buffer string is invalid.
+     */
     public static function decode(string $protocolBuffer): array
     {
         $messages = explode('!', trim($protocolBuffer, '!'));
@@ -11,58 +18,79 @@ class GoogleMapsQueryArgs
         return static::parse($messages);
     }
 
+    /**
+     * Encodes an array into a protocol buffer string.
+     *
+     * @param array $messages The array to encode.
+     * @param int|null $realKey Optional real key for nested arrays.
+     * @return string The encoded protocol buffer string.
+     */
     public static function encode(array $messages, int $realKey = null): string
     {
-        $segments = [];
-
-        foreach ($messages as $key => $message) {
+        $segments = array_map(function ($key, $message) use ($realKey) {
             if (is_array($message)) {
                 if (array_is_list($message)) {
-                    $segments[] = self::encode($message, $key);
-                } else {
-                    $segments[] = ($realKey ?? $key) . 'm' . self::countElements($message) . self::encode($message);
-
+                    return static::encode($message, $key);
                 }
-            } else {
-                $segments[] = ($realKey ?? $key) . $message;
+
+                return ($realKey ?? $key) . 'm' . static::countElements($message) . static::encode($message);
             }
-        }
+
+            return ($realKey ?? $key) . $message;
+        }, array_keys($messages), $messages);
 
         return ($realKey ? '' : '!') . implode('!', $segments);
     }
 
-    protected static function countElements(array $array, int $total = 0): int
+    /**
+     * Counts the number of elements in an array.
+     *
+     * @param array $array The array to count.
+     * @param int $initial The initial count.
+     * @return int The total number of elements.
+     */
+    protected static function countElements(array $array, int $initial = 0): int
     {
         foreach ($array as $value) {
             if (is_array($value)) {
                 if (array_is_list($value)) {
-                    $total += self::countElements($value);
+                    $initial += static::countElements($value);
                 } else {
-                    $total += self::countElements($value, 1);
+                    $initial += static::countElements($value, 1);
                 }
             } else {
-                $total++;
+                $initial++;
             }
         }
 
-        return $total;
+        return $initial;
     }
 
+    /**
+     * Parses an array of messages into a decoded array.
+     *
+     * @param array $messages The array of messages.
+     * @return array The decoded array.
+     * @throws \InvalidArgumentException If a message has an unknown format.
+     */
     protected static function parse(array $messages): array
     {
+        $count = count($messages);
         $result = [];
 
-        for ($i = 0; $i < count($messages); $i++) {
+        for ($i = 0; $i < $count; $i++) {
             $message = $messages[$i];
 
             if (preg_match('/^(\d+)m(\d+)/', $message, $matches)) {
                 $key = $matches[1];
-                $length = intval($matches[2]);
+                $length = (int)$matches[2];
+
+                $parsed = self::parse(array_slice($messages, $i + 1, $length));
 
                 if (isset($result[$key])) {
-                    $result[$key] = [$result[$key], static::parse(array_slice($messages, $i + 1, $length))];
+                    $result[$key] = [$result[$key], $parsed];
                 } else {
-                    $result[$key] = static::parse(array_slice($messages, $i + 1, $length));
+                    $result[$key] = $parsed;
                 }
 
                 $i += $length;
@@ -71,17 +99,15 @@ class GoogleMapsQueryArgs
                 $type = $matches[2];
                 $value = $matches[3];
 
-                if (isset($result[$key])) {
-                    if (!is_array($result[$key])) {
-                        $result[$key] = [$result[$key]];
-                    }
+                $computed = $type . $value;
 
-                    $result[$key][] = $type . $value;
+                if (isset($result[$key])) {
+                    $result[$key] = array_merge((array)$result[$key], [$computed]);
                 } else {
-                    $result[$key] = $type . $value;
+                    $result[$key] = $computed;
                 }
             } else {
-                throw new \RuntimeException('Unknown param format: ' . $message);
+                throw new \InvalidArgumentException('Unknown param format: ' . $message);
             }
         }
 
