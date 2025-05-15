@@ -19,10 +19,10 @@
     "minimum-stability": "dev",
     "scripts": {
         "post-merge": "composer install",
-        "test": "vendor/bin/phpunit --colors=always --testdox"
+        "tests": "vendor/bin/phpunit --colors=always --testdox"
     },
     "scripts-descriptions": {
-        "test": "Run all tests."
+        "tests": "Run all tests."
     },
     "require": {
         "php": "^7.0 || ^8.0"
